@@ -1,12 +1,16 @@
 import os
 import re
 import requests
+import json
 from flask import Flask, request
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
 app = Flask(__name__)
-bot_app = None
+TOKEN = os.getenv("TELEGRAM_BOT_API_TOKEN")
+API = f"https://api.telegram.org/bot{TOKEN}"
+
+
+def send_message(chat_id, text):
+    requests.post(f"{API}/sendMessage", json={"chat_id": chat_id, "text": text})
 
 
 def fetch_data(number):
@@ -27,46 +31,32 @@ def fetch_data(number):
         return None
 
 
-async def start(update: Update, context):
-    await update.message.reply_text('Welcome to HACKER TRACKER! Please enter the target number:')
-
-
-async def handle_message(update: Update, context):
-    number = update.message.text
-    data = fetch_data(number)
-    if data:
-        response = (
-            f"\u26a1 TARGET INFORMATION \u26a1\n\n"
-            f"\ud83d\udc64 NAME : {data['name']}\n\n"
-            f"\ud83d\udcf1 MOBILE : {data['mobile']}\n\n"
-            f"\ud83d\udccd LOCATION : {data['address']}"
-        )
-    else:
-        response = "Unable to fetch data. Please try again."
-    await update.message.reply_text(response)
-
-
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(), bot_app.bot)
-    import asyncio
-    asyncio.run(bot_app.process_update(update))
-    return "OK"
+    data = request.get_json()
+    if "message" in data:
+        msg = data["message"]
+        chat_id = msg["chat"]["id"]
+        text = msg.get("text", "")
+
+        if text == "/start":
+            send_message(chat_id, "Welcome to HACKER TRACKER! Please enter the target number:")
+        else:
+            fetched = fetch_data(text)
+            if fetched:
+                response = (
+                    "\u26a1 TARGET INFORMATION \u26a1\n\n"
+                    "\ud83d\udc64 NAME : {}\n\n"
+                    "\ud83d\udcf1 MOBILE : {}\n\n"
+                    "\ud83d\udccd LOCATION : {}"
+                ).format(fetched["name"], fetched["mobile"], fetched["address"])
+            else:
+                response = "Unable to fetch data. Please try again."
+            send_message(chat_id, response)
+
+    return {"ok": True}
 
 
 @app.route("/", methods=["GET"])
 def health():
     return "Bot is running"
-
-
-def init_bot():
-    global bot_app
-    token = os.getenv("TELEGRAM_BOT_API_TOKEN")
-    if not token:
-        raise ValueError("TELEGRAM_BOT_API_TOKEN not set")
-    bot_app = ApplicationBuilder().token(token).build()
-    bot_app.add_handler(CommandHandler("start", start))
-    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-
-init_bot()
