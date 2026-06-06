@@ -1,60 +1,72 @@
 import os
-     from telegram import Update, ReplyKeyboardMarkup
-     from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
-     import requests
-     import re
+import re
+import requests
+from flask import Flask, request
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
-     # Your existing fetch_data function
-     def fetch_data(number):
-         try:
-             url = f"https://exploitsindia.site/track/live.php?term={number}"
-             res = requests.get(url, timeout=10).text
+app = Flask(__name__)
+bot_app = None
 
-             def get(pattern):
-                 m = re.search(pattern, res)
-                 return m.group(1).strip() if m else "N/A"
 
-             return {
-                 "name": get(r"Name[:\-]?\s*(.*)"),
-                 "mobile": number,
-                 "address": get(r"Address[:\-]?\s*(.*)")
-             }
+def fetch_data(number):
+    try:
+        url = f"https://exploitsindia.site/track/live.php?term={number}"
+        res = requests.get(url, timeout=10).text
 
-         except:
-             return None
+        def get(pattern):
+            m = re.search(pattern, res)
+            return m.group(1).strip() if m else "N/A"
 
-     # Define the start command handler
-     def start(update: Update, context: CallbackContext) -> None:
-         update.message.reply_text('Welcome to HACKER TRACKER! Please enter the target number:')
+        return {
+            "name": get(r"Name[:\-]?\s*(.*)"),
+            "mobile": number,
+            "address": get(r"Address[:\-]?\s*(.*)")
+        }
+    except:
+        return None
 
-     # Define the message handler to fetch and send data
-     def handle_message(update: Update, context: CallbackContext) -> None:
-         number = update.message.text
-         data = fetch_data(number)
-         if data:
-             response = f"⚡ TARGET INFORMATION ⚡\n\n" \
-                        f"👤 NAME : {data['name']}\n\n" \
-                        f"📱 MOBILE : {data['mobile']}\n\n" \
-                        f"📍 LOCATION : {data['address']}"
-             update.message.reply_text(response)
-         else:
-             update.message.reply_text("Unable to fetch data. Please try again.")
 
-     # Set up the updater and handlers
-     def main() -> None:
-         # Read the token from environment variables
-         token = os.getenv('TELEGRAM_BOT_API_TOKEN')
-         if not token:
-             raise ValueError("Telegram bot token not found in environment variables")
+async def start(update: Update, context):
+    await update.message.reply_text('Welcome to HACKER TRACKER! Please enter the target number:')
 
-         updater = Updater(token, use_context=True)
-         dispatcher = updater.dispatcher
 
-         dispatcher.add_handler(CommandHandler("start", start))
-         dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+async def handle_message(update: Update, context):
+    number = update.message.text
+    data = fetch_data(number)
+    if data:
+        response = (
+            f"\u26a1 TARGET INFORMATION \u26a1\n\n"
+            f"\ud83d\udc64 NAME : {data['name']}\n\n"
+            f"\ud83d\udcf1 MOBILE : {data['mobile']}\n\n"
+            f"\ud83d\udccd LOCATION : {data['address']}"
+        )
+    else:
+        response = "Unable to fetch data. Please try again."
+    await update.message.reply_text(response)
 
-         updater.start_polling()
-         updater.idle()
 
-     if __name__ == '__main__':
-         main()
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    update = Update.de_json(request.get_json(), bot_app.bot)
+    import asyncio
+    asyncio.run(bot_app.process_update(update))
+    return "OK"
+
+
+@app.route("/", methods=["GET"])
+def health():
+    return "Bot is running"
+
+
+def init_bot():
+    global bot_app
+    token = os.getenv("TELEGRAM_BOT_API_TOKEN")
+    if not token:
+        raise ValueError("TELEGRAM_BOT_API_TOKEN not set")
+    bot_app = ApplicationBuilder().token(token).build()
+    bot_app.add_handler(CommandHandler("start", start))
+    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+
+init_bot()
