@@ -1,0 +1,18 @@
+{
+       "version": 2,
+       "builds": [
+         {
+           "src": "telegram_bot.py",
+           "use": "@vercel/python",
+           "config": {
+             "installCommand": "pip install -r requirements.txt"
+           }
+         }
+       ],
+       "routes": [
+         {
+           "src": "/(.*)",
+           "dest": "telegram_bot.py"
+         }
+       ]
+     }
