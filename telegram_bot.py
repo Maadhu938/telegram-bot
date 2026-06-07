@@ -66,18 +66,18 @@ def webhook():
             send_message(chat_id, "ℹ️ *About*\n\nProfessional phone lookup bot\nVersion 2.0\n\nEducational Purpose Only")
         
         elif text in ["📞 Support", "/support"]:
-            send_message(chat_id, "📞 *Support*\n\nContact: @Maadhu\nIssues: github.com/Maadhu938\n\nUser is responsible for their messages")
+            send_message(chat_id, "🎧 Customer Support\n\nHaving trouble?\n\nDescribe your issue clearly.\nUse /start to begin.\n\nSupport Contact:\n@maadhu938\n\nWe appreciate your feedback.", parse_mode="HTML")
         
         elif text in ["📊 Stats", "/stats"] and is_admin(user_id):
             users, total, today = get_stats()
-            send_message(chat_id, f"📊 *Statistics*\n\nUsers: {users}\nRequests: {total}\nToday: {today}")
+            send_message(chat_id, f"📊 Statistics\n\nUsers: {users}\nRequests: {total}\nToday: {today}")
         
         elif text in ["👥 Users", "/users"] and is_admin(user_id):
             users = get_all_users()
-            text_out = "👥 *Users*\n\n"
+            text_out = "👥 Users\n\n"
             if users:
                 for uid, username, name in users[:20]:
-                    text_out += f"ID: `{uid}` | @{escape_markdown(username or 'N/A')} | {escape_markdown(name or 'N/A')}\n"
+                    text_out += f"ID: {uid} | @{escape_markdown(username or 'N/A')} | {escape_markdown(name or 'N/A')}\n"
             else:
                 text_out = "No users yet"
             send_message(chat_id, text_out)
@@ -85,9 +85,9 @@ def webhook():
         elif text in ["📝 Logs", "/logs"] and is_admin(user_id):
             logs = get_logs()
             if logs:
-                text_out = "📝 *Recent Logs*\n\n"
+                text_out = "📝 Recent Logs\n\n"
                 for uid, query, ts in logs[:20]:
-                    text_out += f"`{ts}` | `{uid}` | {query}\n"
+                    text_out += f"{ts} | {uid} | {query}\n"
             else:
                 text_out = "No logs yet"
             send_message(chat_id, text_out)
@@ -133,10 +133,10 @@ def webhook():
                     ]
                 }
                 send_message(chat_id,
-                    f"🔍 *Lookup Result*\n\n"
-                    f"👤 *Name*\n`{escape_markdown(data_out['name'])}`\n\n"
-                    f"📱 *Mobile*\n`{escape_markdown(data_out['mobile'])}`\n\n"
-                    f"📍 *Address*\n_{escape_markdown(data_out['address'])}_\n\n"
+                    f"🔍 Lookup Result\n\n"
+                    f"👤 Name\n`{escape_markdown(data_out['name'])}`\n\n"
+                    f"📱 Mobile\n`{escape_markdown(data_out['mobile'])}`\n\n"
+                    f"📍 Address\n_{escape_markdown(data_out['address'])}_\n\n"
                     f"━━━━━━━━━━━━━━\n"
                     f"🤖 Developed by Maadhu\n"
                     f"Educational Purpose Only",
@@ -155,7 +155,7 @@ def webhook():
             requests.post(f"{API}/editMessageText", json={
                 "chat_id": chat_id,
                 "message_id": query["message"]["message_id"],
-                "text": f"📊 *Stats*\n\nUsers: {users}\nRequests: {total}\nToday: {today}\n\nEducational Purpose Only",
+                "text": f"📊 Stats\n\nUsers: {users}\nRequests: {total}\nToday: {today}\n\nEducational Purpose Only",
                 "parse_mode": "Markdown"
             }, timeout=10)
         elif data_cb == "lookup":
