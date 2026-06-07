@@ -36,6 +36,8 @@ def fetch_data(number):
 def is_admin(user_id):
     return user_id in ADMIN_IDS
 
+ADMIN_BUTTONS = ["📊 Stats", "👥 Users", "📝 Logs", "📢 Broadcast", "/stats", "/users", "/logs", "/broadcast"]
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
@@ -67,6 +69,9 @@ def webhook():
         
         elif text in ["📞 Support", "/support"]:
             send_message(chat_id, "🎧 Customer Support\n\nHaving trouble?\n\nDescribe your issue clearly.\nUse /start to begin.\n\nSupport Contact:\n@maadhu938\n\nWe appreciate your feedback.", parse_mode="HTML")
+        
+        elif text in ADMIN_BUTTONS and not is_admin(user_id):
+            send_message(chat_id, "❌ Admin access required")
         
         elif text in ["📊 Stats", "/stats"] and is_admin(user_id):
             users, total, today = get_stats()
@@ -121,7 +126,7 @@ def webhook():
             }
             send_message(chat_id, "🔧 Admin Panel:", reply_markup=keyboard)
         
-        elif isinstance(text, str) and not text.startswith("/"):
+        elif isinstance(text, str) and not text.startswith("/") and text not in ADMIN_BUTTONS:
             add_user(user_id)
             log_query(user_id, text)
             data_out = fetch_data(text)
