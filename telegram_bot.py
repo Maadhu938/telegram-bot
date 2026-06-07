@@ -50,7 +50,13 @@ def webhook():
         
         if text == "/start":
             add_user(user_id, msg.get("from", {}).get("username"), msg.get("from", {}).get("first_name"))
-            keyboard = {"keyboard": [["🔍 Lookup"], ["ℹ️ About", "📞 Support"]], "resize_keyboard": True}
+            keyboard = {
+                "keyboard": [
+                    [{"text": "🔍 Lookup"}],
+                    [{"text": "ℹ️ About"}, {"text": "📞 Support"}]
+                ],
+                "resize_keyboard": True
+            }
             send_message(chat_id, "🤖 *MADDY ASSISTANT*\n\nFast • Reliable • Secure\n\nChoose an option:", reply_markup=keyboard)
         
         elif text in ["🔍 Lookup", "/lookup"]:
@@ -69,16 +75,25 @@ def webhook():
         elif text in ["👥 Users", "/users"] and is_admin(user_id):
             users = get_all_users()
             text_out = "👥 *Users*\n\n"
-            for uid, username, name in users[:20]:
-                text_out += f"ID: `{uid}` | @{escape_markdown(username or 'N/A')} | {escape_markdown(name or 'N/A')}\n"
+            if users:
+                for uid, username, name in users[:20]:
+                    text_out += f"ID: `{uid}` | @{escape_markdown(username or 'N/A')} | {escape_markdown(name or 'N/A')}\n"
+            else:
+                text_out = "No users yet"
             send_message(chat_id, text_out)
         
         elif text in ["📝 Logs", "/logs"] and is_admin(user_id):
             logs = get_logs()
-            text_out = "📝 *Recent Logs*\n\n"
-            for uid, query, ts in logs[:20]:
-                text_out += f"`{ts}` | `{uid}` | {query}\n"
-            send_message(chat_id, text_out or "No logs yet")
+            if logs:
+                text_out = "📝 *Recent Logs*\n\n"
+                for uid, query, ts in logs[:20]:
+                    text_out += f"`{ts}` | `{uid}` | {query}\n"
+            else:
+                text_out = "No logs yet"
+            send_message(chat_id, text_out)
+        
+        elif text == "📢 Broadcast" and is_admin(user_id):
+            send_message(chat_id, "Usage: /broadcast <your message>")
         
         elif text.startswith("/broadcast") and is_admin(user_id):
             parts = text.split(maxsplit=1)
@@ -97,7 +112,13 @@ def webhook():
             send_message(chat_id, f"📢 Sent to {sent} users")
         
         elif text == "/admin" and is_admin(user_id):
-            keyboard = {"keyboard": [["📊 Stats", "👥 Users"], ["📝 Logs", "📢 Broadcast"]], "resize_keyboard": True}
+            keyboard = {
+                "keyboard": [
+                    [{"text": "📊 Stats"}, {"text": "👥 Users"}],
+                    [{"text": "📝 Logs"}, {"text": "📢 Broadcast"}]
+                ],
+                "resize_keyboard": True
+            }
             send_message(chat_id, "🔧 Admin Panel:", reply_markup=keyboard)
         
         elif isinstance(text, str) and not text.startswith("/"):
@@ -105,7 +126,12 @@ def webhook():
             log_query(user_id, text)
             data_out = fetch_data(text)
             if data_out:
-                reply_markup = {"inline_keyboard": [[{"text": "📊 Stats", "callback_data": "stats"}], [{"text": "🔍 New Lookup", "callback_data": "lookup"}]]}
+                reply_markup = {
+                    "inline_keyboard": [
+                        [{"text": "📊 Stats", "callback_data": "stats"}],
+                        [{"text": "🔍 New Lookup", "callback_data": "lookup"}]
+                    ]
+                }
                 send_message(chat_id,
                     f"🔍 *Lookup Result*\n\n"
                     f"👤 *Name*\n`{escape_markdown(data_out['name'])}`\n\n"
@@ -126,11 +152,18 @@ def webhook():
         
         if data_cb == "stats":
             users, total, today = get_stats()
-            requests.post(f"{API}/editMessageText", json={"chat_id": chat_id, "message_id": query["message"]["message_id"],
-                "text": f"📊 *Stats*\n\nUsers: {users}\nRequests: {total}\nToday: {today}\n\nEducational Purpose Only", "parse_mode": "Markdown"}, timeout=10)
+            requests.post(f"{API}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": query["message"]["message_id"],
+                "text": f"📊 *Stats*\n\nUsers: {users}\nRequests: {total}\nToday: {today}\n\nEducational Purpose Only",
+                "parse_mode": "Markdown"
+            }, timeout=10)
         elif data_cb == "lookup":
-            requests.post(f"{API}/editMessageText", json={"chat_id": chat_id, "message_id": query["message"]["message_id"],
-                "text": "🔍 Send the phone number to lookup:"}, timeout=10)
+            requests.post(f"{API}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": query["message"]["message_id"],
+                "text": "🔍 Send the phone number to lookup:"
+            }, timeout=10)
         requests.post(f"{API}/answerCallbackQuery", json={"callback_query_id": query["id"]}, timeout=10)
     
     return {"ok": True}
