@@ -154,15 +154,22 @@ def webhook():
         query = data["callback_query"]
         chat_id = query["message"]["chat"]["id"]
         data_cb = query["data"]
+        cb_user_id = query.get("from", {}).get("id")
         
         if data_cb == "stats":
-            users, total, today = get_stats()
-            requests.post(f"{API}/editMessageText", json={
-                "chat_id": chat_id,
-                "message_id": query["message"]["message_id"],
-                "text": f"📊 Stats\n\nUsers: {users}\nRequests: {total}\nToday: {today}\n\nEducational Purpose Only",
-                "parse_mode": "Markdown"
-            }, timeout=10)
+            if is_admin(cb_user_id):
+                users, total, today = get_stats()
+                requests.post(f"{API}/editMessageText", json={
+                    "chat_id": chat_id,
+                    "message_id": query["message"]["message_id"],
+                    "text": f"📊 Stats\n\nUsers: {users}\nRequests: {total}\nToday: {today}\n\nEducational Purpose Only",
+                    "parse_mode": "Markdown"
+                }, timeout=10)
+            else:
+                requests.post(f"{API}/answerCallbackQuery", json={
+                    "callback_query_id": query["id"],
+                    "text": "Admin access required"
+                }, timeout=10)
         elif data_cb == "lookup":
             requests.post(f"{API}/editMessageText", json={
                 "chat_id": chat_id,
