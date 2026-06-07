@@ -53,26 +53,32 @@ def webhook():
             keyboard = {"keyboard": [["🔍 Lookup"], ["ℹ️ About", "📞 Support"]], "resize_keyboard": True}
             send_message(chat_id, "🤖 *MADDY ASSISTANT*\n\nFast • Reliable • Secure\n\nChoose an option:", reply_markup=keyboard)
         
-        elif text == "/about":
+        elif text in ["🔍 Lookup", "/lookup"]:
+            send_message(chat_id, "🔍 Send the phone number to lookup:")
+        
+        elif text in ["ℹ️ About", "/about"]:
             send_message(chat_id, "ℹ️ *About*\n\nProfessional phone lookup bot\nVersion 2.0\n\nEducational Purpose Only")
         
-        elif text == "/support":
+        elif text in ["📞 Support", "/support"]:
             send_message(chat_id, "📞 *Support*\n\nContact: @Maadhu\nIssues: github.com/Maadhu938\n\nUser is responsible for their messages")
         
-        elif text == "/admin" and is_admin(user_id):
-            keyboard = {"keyboard": [["📊 Stats", "👥 Users"], ["📝 Logs", "📢 Broadcast"]], "resize_keyboard": True}
-            send_message(chat_id, "🔧 Admin Panel:", reply_markup=keyboard)
-        
-        elif text == "/stats" and is_admin(user_id):
+        elif text in ["📊 Stats", "/stats"] and is_admin(user_id):
             users, total, today = get_stats()
             send_message(chat_id, f"📊 *Statistics*\n\nUsers: {users}\nRequests: {total}\nToday: {today}")
         
-        elif text == "/users" and is_admin(user_id):
+        elif text in ["👥 Users", "/users"] and is_admin(user_id):
             users = get_all_users()
             text_out = "👥 *Users*\n\n"
             for uid, username, name in users[:20]:
                 text_out += f"ID: `{uid}` | @{escape_markdown(username or 'N/A')} | {escape_markdown(name or 'N/A')}\n"
             send_message(chat_id, text_out)
+        
+        elif text in ["📝 Logs", "/logs"] and is_admin(user_id):
+            logs = get_logs()
+            text_out = "📝 *Recent Logs*\n\n"
+            for uid, query, ts in logs[:20]:
+                text_out += f"`{ts}` | `{uid}` | {query}\n"
+            send_message(chat_id, text_out or "No logs yet")
         
         elif text.startswith("/broadcast") and is_admin(user_id):
             parts = text.split(maxsplit=1)
@@ -89,6 +95,10 @@ def webhook():
                 except Exception as e:
                     print(f"Broadcast error to {uid}: {e}")
             send_message(chat_id, f"📢 Sent to {sent} users")
+        
+        elif text == "/admin" and is_admin(user_id):
+            keyboard = {"keyboard": [["📊 Stats", "👥 Users"], ["📝 Logs", "📢 Broadcast"]], "resize_keyboard": True}
+            send_message(chat_id, "🔧 Admin Panel:", reply_markup=keyboard)
         
         elif isinstance(text, str) and not text.startswith("/"):
             add_user(user_id)
