@@ -25,10 +25,17 @@ def fetch_data(number):
     try:
         url = f"https://exploitsindia.site/track/live.php?term={number}"
         res = requests.get(url, timeout=10).text
+        print(f"API Response: {res[:500]}")
         def get(pattern):
             m = re.search(pattern, res)
-            return m.group(1).strip() if m else "N/A"
-        return {"name": get(r"Name[:\-]?\s*(.*)"), "mobile": number, "address": get(r"Address[:\-]?\s*(.*)")}
+            if m:
+                return m.group(1).strip()
+            return None
+        name = get(r"Name[:\-]?\s*(.*)")
+        address = get(r"Address[:\-]?\s*(.*)")
+        if name or address:
+            return {"name": name or "N/A", "mobile": number, "address": address or "N/A"}
+        return None
     except Exception as e:
         print(f"fetch_data error: {e}")
         return None
